@@ -1,0 +1,113 @@
+---
+title: "Airline Premium Economy Pricing Analysis"
+author: "Tanya Gupta"
+date: "1/3/2018"
+output: html_document
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+#1
+Read the data into R
+```{r}
+a.df <- read.csv(paste("SixAirlinesDataV2.csv", sep=""))
+
+```
+
+#2 
+Summarize the data to understand the mean, median, standard deviation of  each variable
+```{r}
+summary(a.df)
+```
+
+
+#3
+Comparing Premium Economy Ticket Prices and Economy Ticket Prices.
+```{r}
+plot(~a.df$PriceEconomy + a.df$PricePremium, main="Premium Economy Price vs. Economy Price")
+abline(0,1)
+```
+
+Analysing Pitch Difference of Premium Economy seats and the pitch of Economy seats.
+```{r}
+library(lattice)
+histogram(~a.df$PitchDifference, main = "Distribution of Pitch Difference", xlab="Difference in Pitch")
+```
+
+Analysing effect of Pitch Difference on the relative price of Economy and Premium Economy.
+```{r}
+rel_pr = aggregate(cbind(PriceEconomy,PricePremium, PriceRelative) ~ PitchDifference, data = a.df, mean)
+library(car)
+scatterplot(rel_pr$PitchDifference, rel_pr$PriceRelative, main="Relative Price Difference & Pitch", xlab="Pitch Difference", ylab="Relative Price b/w Economy and Premium Economy")
+```
+
+Analysing effect of Pitch Difference on the price of Economy and Premium Economy.
+```{r}
+boxplot(a.df$PriceRelative~a.df$PitchDifference, main="Relative Price Difference vs.Pitch", ylab="Pitch Difference", xlab="Relative Price b/w Economy and Premium Economy")
+```
+
+Comparing distribution of the difference in the width of Premium Economy seats and the width of Economy seats.
+```{r}
+ library(lattice)
+histogram(~a.df$WidthDifference, main = "Distribution of Difference in Seat Width", xlab="Difference in Seat Width")
+```
+
+Analysing effect of plane capacity
+```{r}
+xyplot(a.df$PriceRelative ~ a.df$SeatsTotal,type = c("p", "g"), xlab = "Total Seats (Economy + Premium Economy Seats)", ylab = "Rel. Price Difference")
+```
+
+Analysing percentage of Premium Economy Seats
+```{r}
+boxplot(a.df$PercentPremiumSeats, main="Percentage of Premium Economy Seats", ylab="Percentage of Premium Economy Seats in Plane")
+```
+
+#4
+Scatter Plots to understand how are the variables correlated pair-wise
+```{r}
+library(car)
+scatterplotMatrix(~PricePremium+PriceEconomy+SeatsTotal+PercentPremiumSeats+PitchDifference+WidthDifference, data=a.df, main="Premium Economy vs. Economy Airfares")
+```
+
+#5
+Create a Variance-Covariance Matrix
+```{r}
+library(Hmisc)
+colairlines <- c("PricePremium","PriceEconomy","PitchDifference","WidthDifference")
+corMatrix <- rcorr(as.matrix(a.df[,colairlines]))
+corMatrix
+
+
+colairlines2 <- c("PricePremium","PriceEconomy","SeatsTotal","PercentPremiumSeats")
+corMatrix2 <- rcorr(as.matrix(a.df[,colairlines2]))
+corMatrix2
+```
+
+#6
+Draw a Corrgram
+```{r}
+library(Hmisc)
+library(car)
+library(corrgram)
+colairlines <- c("PricePremium","PriceEconomy","PitchDifference","WidthDifference","SeatsTotal","PercentPremiumSeats")
+corrgram(a.df[,colairlines], order=TRUE, main="Premium Economy vs. Economy Airfares", lower.panel=panel.pts, upper.panel=panel.pie, diag.panel=panel.minmax, text.panel=panel.txt)
+```
+
+#7
+Run T-Test to test the following null hypthesis:
+Premium and Economy airfares are same.
+```{r}
+t.test(a.df$PricePremium, a.df$PriceEconomy)
+```
+Since the p-value is less than 0.05, we fail to reject the null hypothesis that they are equal.
+
+##Regression Analysis
+
+In this model we try regressing Price Premium on all the remaining columns.
+```{r}
+m <- PricePremium ~ PriceEconomy + PitchDifference + WidthDifference + PercentPremiumSeats + SeatsTotal + IsInternational + TravelMonth + FlightDuration + Aircraft
+fit <- lm(m, data = a.df)
+summary(fit)
+```
